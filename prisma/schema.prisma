@@ -1,0 +1,639 @@
+// DorlaCode — Multi-Tenant Facebook Messenger Automation SaaS
+// Prisma schema (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────── Users & Auth ───────────────────────────
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id                  String     @id @default(cuid())
+  email               String     @unique
+  emailVerifiedAt     DateTime?
+  passwordHash        String?
+  name                String
+  role                UserRole   @default(CUSTOMER)
+  status              UserStatus @default(ACTIVE)
+  twoFactorSecretEnc  String?    // AES-256-GCM encrypted TOTP secret
+  twoFactorEnabled    Boolean    @default(false)
+  twoFactorPending    Boolean    @default(false) // set while enabling 2FA, before confirm
+  notificationPrefs   Json?
+  failedLoginCount    Int        @default(0)
+  lockedUntil         DateTime?
+  suspendedAt         DateTime?
+  suspendedReason     String?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  demoData            Boolean    @default(false) // seeded sample account (dev only)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  sessions            Session[]
+  verificationTokens  VerificationToken[]
+  oauthAccounts       OAuthAccount[]
+  subscriptions       CustomerSubscription[]
+  pages               FacebookPage[]
+  automations         Automation[]
+  contacts            Contact[]
+  contactTags         ContactTag[]
+  conversations       Conversation[]
+  messages            Message[]
+  campaigns           Campaign[]
+  trackedLinks        TrackedLink[]
+  usageRecords        UsageRecord[]
+  auditLogs           AuditLog[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique // sha256 of the opaque session token
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum VerificationTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+  OAUTH_STATE
+  TWOFA_PENDING
+}
+
+model VerificationToken {
+  id         String               @id @default(cuid())
+  userId     String?
+  identifier String // email or state key
+  tokenHash  String @unique // sha256 of the one-time token
+  type       VerificationTokenType
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime             @default(now())
+  user       User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([identifier, type])
+  @@index([userId, type])
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String // "facebook"
+  providerAccountId String // Facebook user id
+  accessTokenEnc    String? // encrypted user access token
+  tokenExpiresAt    DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ─────────────────────────── Billing (optional) ─────────────────────
+
+model SubscriptionPlan {
+  id            String  @id @default(cuid())
+  key           String  @unique // starter | growth | pro
+  name          String
+  description   String?
+  priceMonthly  Decimal @db.Decimal(10, 2) @default(0)
+  maxPages      Int     @default(1)
+  maxContacts   Int     @default(1000)
+  maxAutomations Int    @default(3)
+  features      Json?
+  isActive      Boolean @default(true)
+  sortOrder     Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions CustomerSubscription[]
+}
+
+model CustomerSubscription {
+  id                 String   @id @default(cuid())
+  userId             String
+  planId             String
+  status             String   @default("ACTIVE") // ACTIVE | CANCELLED
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan               SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@unique([userId])
+  @@index([planId])
+}
+
+// ─────────────────────────── Facebook Pages ─────────────────────────
+
+enum PageConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  TOKEN_EXPIRED
+  PENDING
+}
+
+model FacebookPage {
+  id                String              @id @default(cuid())
+  userId            String
+  fbPageId          String
+  name              String
+  category          String?
+  pictureUrl        String?
+  accessTokenEnc    String // AES-256-GCM encrypted page access token
+  tokenExpiresAt    DateTime?
+  grantedScopes     String? // space-separated scopes granted at connect time
+  pageTasks         String? // tasks the user has on the page
+  status            PageConnectionStatus @default(CONNECTED)
+  webhookSubscribed Boolean             @default(false)
+  webhookFields     String? // subscribed webhook fields
+  lastError         String?
+  lastSyncedAt      DateTime?
+  connectedAt       DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  isSample          Boolean             @default(false) // dev seed marker
+
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  automations       Automation[]
+  contacts          Contact[]
+  conversations     Conversation[]
+  messages          Message[]
+  webhookEvents     WebhookEvent[]
+
+  @@unique([userId, fbPageId])
+  @@index([fbPageId])
+  @@index([status])
+}
+
+// ─────────────────────────── Automations ────────────────────────────
+
+enum AutomationType {
+  COMMENT_REPLY // comment -> private reply
+  WELCOME_MESSAGE // first Messenger interaction
+  DEFAULT_REPLY // incoming DM default/keyword reply
+}
+
+enum AutomationStatus {
+  ACTIVE
+  PAUSED
+}
+
+enum KeywordMatchType {
+  CONTAINS
+  EXACT
+  STARTS_WITH
+}
+
+model Automation {
+  id             String           @id @default(cuid())
+  userId         String
+  pageId         String
+  type           AutomationType
+  name           String
+  status         AutomationStatus @default(PAUSED)
+  // core message config (personalization supported via {{first_name}} etc.)
+  replyTemplate  String? // COMMENT_REPLY / WELCOME_MESSAGE / DEFAULT_REPLY main body
+  fallbackReply  String? // DEFAULT_REPLY fallback when no keyword matches
+  matchMode      String? // "any" | "keywords" (COMMENT_REPLY); "keywords+fallback" for DEFAULT_REPLY
+  enabledPosts   Json? // ["ALL"] or explicit fb post ids for COMMENT_REPLY
+  sendWelcomeQuickReplies Json? // optional quick replies for welcome flow
+  lastError      String?
+  lastRunAt      DateTime?
+  triggeredCount Int              @default(0)
+  sentCount      Int              @default(0)
+  skippedCount   Int              @default(0)
+  failedCount    Int              @default(0)
+  isSample       Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page           FacebookPage    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  rules          AutomationRule[]
+  messages       Message[]
+
+  @@unique([pageId, type])
+  @@index([userId])
+  @@index([status])
+}
+
+model AutomationRule {
+  id           String          @id @default(cuid())
+  automationId String
+  keyword      String
+  matchType    KeywordMatchType @default(CONTAINS)
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  automation   Automation      @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@index([automationId])
+}
+
+// ─────────────────────────── Contacts ───────────────────────────────
+
+enum ContactMessagingState {
+  UNKNOWN // interacted, eligibility not yet verified
+  ELIGIBLE // within an open messaging window
+  INELIGIBLE // outside messaging window
+  OPTED_OUT
+  BLOCKED
+}
+
+model Contact {
+  id                String               @id @default(cuid())
+  userId            String
+  pageId            String?
+  fbPsid            String // page-scoped ID (PSID)
+  name              String?
+  firstName         String?
+  lastName          String?
+  avatarUrl         String?
+  locale            String?
+  source            String? // comment_reply | welcome | default_reply | campaign | manual | import
+  messagingState    ContactMessagingState @default(UNKNOWN)
+  messagingWindowUntil DateTime? // earliest time we may send (based on last inbound event)
+  optedOutAt        DateTime?
+  notes             String?
+  isSample          Boolean              @default(false)
+  firstInteractionAt DateTime             @default(now())
+  lastInteractionAt DateTime             @default(now())
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page              FacebookPage?   @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  tagAssignments    ContactTagAssignment[]
+  conversations     Conversation[]
+  messages          Message[]
+  campaignRecipients CampaignRecipient[]
+  linkClicks        LinkClick[]
+
+  @@unique([userId, fbPsid])
+  @@index([pageId])
+  @@index([messagingState])
+  @@index([lastInteractionAt])
+  @@index([name])
+}
+
+model ContactTag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String   @default("#6c757d")
+  createdAt DateTime @default(now())
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments ContactTagAssignment[]
+
+  @@unique([userId, name])
+}
+
+model ContactTagAssignment {
+  id        String     @id @default(cuid())
+  contactId String
+  tagId     String
+  createdAt DateTime   @default(now())
+  contact   Contact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag       ContactTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, tagId])
+  @@index([tagId])
+}
+
+// ─────────────────────────── Conversations & Messages ───────────────
+
+model Conversation {
+  id            String    @id @default(cuid())
+  userId        String
+  pageId        String
+  contactId     String
+  fbThreadId    String?
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page          FacebookPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  contact       Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages      Message[]
+
+  @@unique([pageId, contactId])
+  @@index([userId])
+}
+
+enum MessageDirection {
+  OUTGOING
+  INCOMING
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  SKIPPED
+  RECEIVED
+}
+
+model Message {
+  id           String          @id @default(cuid())
+  userId       String
+  pageId       String
+  contactId    String?
+  conversationId String?
+  direction    MessageDirection
+  status       MessageStatus   @default(QUEUED)
+  body         String
+  mid          String? @unique // Meta message id (dedupe)
+  commentId    String? // source comment for private replies (dedupe: one reply per comment)
+  campaignId   String?
+  automationId String?
+  error        String?
+  skipReason   String?
+  metadata     Json?
+  sentAt       DateTime?
+  deliveredAt  DateTime?
+  readAt       DateTime?
+  failedAt     DateTime?
+  isSample     Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page         FacebookPage  @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  campaign     Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  automation   Automation?   @relation(fields: [automationId], references: [id], onDelete: SetNull)
+
+  @@unique([commentId]) // idempotent private replies
+  @@index([userId, createdAt])
+  @@index([pageId, createdAt])
+  @@index([status])
+  @@index([campaignId])
+  @@index([contactId])
+}
+
+// ─────────────────────────── Webhook events ─────────────────────────
+
+enum WebhookEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  SKIPPED
+  FAILED
+}
+
+model WebhookEvent {
+  id             String             @id @default(cuid())
+  userId         String? // resolved owner (via page)
+  pageId         String? // internal FacebookPage.id once resolved
+  fbPageId       String?
+  objectType     String // "page"
+  field          String? // feed | messages | messaging_postbacks | message_deliveries | message_reads
+  signatureVerified Boolean         @default(false)
+  payload        Json
+  dedupeKey      String             @unique // deterministic hash for idempotency
+  status         WebhookEventStatus @default(PENDING)
+  processAttempts Int               @default(0)
+  lastError      String?
+  receivedAt     DateTime           @default(now())
+  processedAt    DateTime?
+
+  page           FacebookPage? @relation(fields: [pageId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([receivedAt])
+  @@index([fbPageId])
+}
+
+// ─────────────────────────── Campaigns ──────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  LAUNCHING
+  SENDING
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+model Campaign {
+  id              String         @id @default(cuid())
+  userId          String
+  name            String
+  body            String // supports {{first_name}} and {{tracked_link}}
+  trackedTargetUrl String? // destination used to build per-recipient tracked links
+  status          CampaignStatus @default(DRAFT)
+  audienceSegment Json? // { tagIds: [], onlyEligible: true }
+  eligibleCount   Int            @default(0)
+  totalRecipients Int            @default(0)
+  sentCount       Int            @default(0)
+  failedCount     Int            @default(0)
+  skippedCount    Int            @default(0)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  lastError       String?
+  isSample        Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipients      CampaignRecipient[]
+  messages        Message[]
+  trackedLinks    TrackedLink[]
+  linkClicks      LinkClick[]
+
+  @@index([userId, status])
+  @@index([status])
+}
+
+enum CampaignRecipientStatus {
+  PENDING
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+  CANCELLED
+}
+
+model CampaignRecipient {
+  id          String                 @id @default(cuid())
+  campaignId  String
+  contactId   String
+  status      CampaignRecipientStatus @default(PENDING)
+  recipientToken String @unique // per-recipient token used for tracked links
+  error       String?
+  skipReason  String?
+  messageId   String? @unique
+  sentAt      DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contactId])
+  @@index([status])
+}
+
+// ─────────────────────────── Tracking & clicks ──────────────────────
+
+model TrackedLink {
+  id              String   @id @default(cuid())
+  userId          String
+  campaignId      String?
+  slug            String   @unique
+  targetUrl       String
+  title           String?
+  clickCount      Int      @default(0)
+  uniqueClickCount Int     @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign        Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  clicks          LinkClick[]
+
+  @@index([userId])
+  @@index([campaignId])
+}
+
+model LinkClick {
+  id         String   @id @default(cuid())
+  linkId     String
+  campaignId String?
+  contactId  String?
+  ip         String?
+  userAgent  String?
+  referer    String?
+  occurredAt DateTime @default(now())
+
+  link       TrackedLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  contact    Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([linkId, contactId]) // unique-clicker dedupe (contactId nullable -> multiple anonymous clicks allowed)
+  @@index([linkId, occurredAt])
+  @@index([campaignId])
+}
+
+// ─────────────────────────── Ops: usage, audit, jobs ────────────────
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // MESSAGES_SENT | AUTOMATION_RUN | PAGE_CONNECTED | CAMPAIGN_LAUNCHED | ...
+  amount    Int      @default(1)
+  periodKey String // YYYY-MM for monthly aggregation
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, periodKey])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorEmail  String?
+  actorRole   String?
+  action      String // e.g. user.suspend, page.disconnect, campaign.launch
+  targetType  String?
+  targetId    String?
+  metadata    Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorUserId])
+  @@index([action])
+}
+
+enum BackgroundJobStatus {
+  RETRYING
+  FAILED
+  RESOLVED
+}
+
+model BackgroundJobFailure {
+  id            String             @id @default(cuid())
+  queue         String
+  jobId         String
+  jobName       String
+  attempts      Int                @default(0)
+  error         String?
+  payload       Json?
+  status        BackgroundJobStatus @default(RETRYING)
+  firstFailedAt DateTime           @default(now())
+  lastFailedAt  DateTime           @default(now())
+  resolvedAt    DateTime?
+
+  @@unique([queue, jobId])
+  @@index([status])
+}
+
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  label     String?
+  updatedAt DateTime @updatedAt
+}
+
+// Temporary server-side store for pages returned by OAuth, before the user picks which to connect.
+model PendingPageSelection {
+  id        String   @id @default(cuid())
+  userId    String
+  fbUserId  String?
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailMessage {
+  id        String    @id @default(cuid())
+  toEmail   String
+  subject   String
+  body      String
+  status    String    @default("QUEUED") // QUEUED | SENT | FAILED | LOGGED_DEV
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([toEmail])
+}
