@@ -1,0 +1,856 @@
+# PROJECT REQUIREMENTS: DORLA CODE MESSENGER AUTOMATION SAAS
+
+## 1. Project Overview
+
+Build a complete, beautiful, modern, production-oriented SaaS web application for Facebook Messenger chatbot automation using Laravel, PHP, MySQL, Bootstrap 5, HTML, CSS, JavaScript, and the official Meta Graph API and Messenger Platform APIs.
+
+The application will be hosted at:
+
+**Production domain:** https://dorlacode.com/
+
+The platform should allow anybody to register an account, connect their own Facebook Page, configure automated replies, manage Messenger contacts, personalize messages using subscriber names, run eligible messaging broadcasts, and monitor messaging performance.
+
+The platform owner must have a separate super-admin dashboard for managing registered users, connected Facebook Pages, platform activity, system settings, and account status.
+
+Build a real working application, not just a static UI mockup. All buttons, forms, dashboards, navigation items, database operations, authentication flows, and application functions must be implemented and connected properly.
+
+Use a clean, maintainable Laravel architecture with secure tenant isolation. Design the system so additional messaging channels, subscription plans, and integrations can be added later.
+
+## 2. Required Technology Stack
+
+Use the following technologies:
+
+- Backend: Laravel, using the latest stable version compatible with the hosting environment.
+- Language: PHP.
+- Database: MySQL or MariaDB.
+- Frontend: Bootstrap 5.
+- Icons: Bootstrap Icons or Font Awesome.
+- JavaScript: Vanilla JavaScript and Bootstrap components; use AJAX/fetch where appropriate.
+- Templates: Laravel Blade.
+- Authentication: Laravel authentication with secure password hashing, login, registration, logout, password reset, and email verification.
+- Background processing: Laravel Queues, with Redis where available and a database queue fallback.
+- Scheduled jobs: Laravel Scheduler.
+- Charts: Chart.js.
+- HTTP integration: Laravel HTTP Client.
+- Facebook integration: Official Meta Graph API, Messenger Platform Send API, Webhooks, and the appropriate Facebook Login authorization flow.
+- Database: Proper migrations, relationships, foreign keys, indexes, seeders, and factories.
+- Security: CSRF protection, request validation, authorization policies, rate limiting, encrypted credentials, and secure session handling.
+
+Use Bootstrap 5 throughout the application. Do not use Tailwind CSS as the primary styling framework. Do not use React, Vue, or another frontend framework unless absolutely necessary.
+
+## 3. Design and User Experience
+
+Create a premium, professional SaaS interface comparable in quality to modern marketing automation platforms.
+
+The design should be visually attractive, polished, responsive, and easy to use for nontechnical business owners.
+
+### Visual direction
+
+- Modern SaaS dashboard design.
+- White and very light gray backgrounds.
+- Deep navy or charcoal typography.
+- Blue primary accent color inspired by professional business software.
+- Subtle gradients only where appropriate.
+- Rounded cards, elegant shadows, and clean borders.
+- Beautiful statistics cards with simple icons.
+- Attractive empty states, loading states, and error states.
+- Consistent spacing and typography.
+- Smooth but restrained transitions.
+- Toast notifications for success and failure.
+- Confirmation dialogs for destructive operations.
+- Responsive Bootstrap navigation and mobile sidebar.
+- Professional tables with pagination, searching, filtering, and sorting.
+- Light and dark dashboard themes if practical.
+
+Do not make the design look like a generic unstyled Bootstrap template. Customize Bootstrap variables, colors, typography, buttons, cards, forms, and navigation to create a distinctive product.
+
+The interface must work well on desktop, tablet, and mobile.
+
+Create a public-facing marketing website as well as authenticated customer and super-admin dashboards.
+
+## 4. Public Website
+
+Build the following public pages:
+
+### Homepage
+
+Include:
+- Attractive hero section explaining the Facebook Messenger automation product.
+- Headline focused on automating Messenger conversations and saving time.
+- Call-to-action buttons for creating an account and logging in.
+- Product feature cards.
+- Explanation of comment-to-message automation.
+- Explanation of automatic DM replies.
+- Subscriber management and analytics features.
+- A visual preview of the dashboard.
+- A section explaining how the product works.
+- Security and Facebook integration information.
+- Pricing section that can be configured by the administrator.
+- Frequently asked questions.
+- Footer with links to privacy policy, terms of service, contact, and data deletion instructions.
+
+Do not claim Meta endorsement or partnership.
+
+### Additional public pages
+
+- About.
+- Contact.
+- Pricing.
+- Privacy Policy.
+- Terms of Service.
+- Data Deletion Instructions.
+- Login.
+- Register.
+- Forgot Password.
+- Reset Password.
+
+Create attractive, functional forms and appropriate validation messages.
+
+## 5. Customer Registration and Authentication
+
+Any person should be able to register for an account.
+
+Required features:
+- Name.
+- Email address.
+- Password and password confirmation.
+- Email verification.
+- Login and logout.
+- Password reset.
+- Account profile editing.
+- Change password.
+- Account status and security settings.
+- Session protection.
+- Login rate limiting.
+- User notifications.
+
+Use Laravel's secure authentication mechanisms.
+
+Each customer account must be isolated from every other customer account.
+
+A user must never be able to access another user's Pages, contacts, automations, messages, broadcasts, analytics, or credentials by changing a URL or API parameter.
+
+Use authorization policies and server-side ownership checks on every relevant operation.
+
+## 6. Customer Dashboard
+
+Create a beautiful dashboard showing:
+
+- Total connected Facebook Pages.
+- Total Messenger contacts/subscribers.
+- New contacts over the selected period.
+- Messages sent.
+- Messages delivered.
+- Reads, when available.
+- Total link clicks.
+- Click-through rate.
+- Active automations.
+- Recent conversations.
+- Recent automation activity.
+- Broadcast history.
+- Page connection health.
+- Messaging eligibility warnings.
+- Recent errors and failed jobs.
+
+Use Chart.js for visual analytics.
+
+Provide date filters such as today, last 7 days, last 30 days, and custom date ranges.
+
+Only display real database data. Do not hardcode statistics in production dashboards. If no data exists, display an attractive empty state with instructions.
+
+## 7. Connect Facebook Pages
+
+Implement an official Meta authorization flow so each customer can connect their own Facebook Pages.
+
+Provide a prominent “Connect Facebook Page” button.
+
+The connection process should:
+
+1. Redirect the user to Meta's official authorization screen.
+2. Request only the permissions required for supported features.
+3. Handle the OAuth callback securely.
+4. Retrieve the Pages available to the authorized user.
+5. Display eligible Pages with their names, profile images when available, and Page IDs.
+6. Allow the customer to select a Page.
+7. Store the Page connection and associated token securely.
+8. Subscribe the Page to relevant webhooks.
+9. Verify connection status.
+10. Display success, failure, and permission error messages.
+11. Allow the customer to disconnect a Page.
+12. Detect invalid, revoked, or expired credentials where possible.
+13. Provide a reconnect workflow.
+14. Avoid storing duplicate connections for the same Page within the same tenant.
+
+Store, at minimum, the following Page information where available:
+
+- Internal database ID.
+- Owning application user ID.
+- Meta Page ID.
+- Page name.
+- Page profile image URL.
+- Encrypted Page access token.
+- Granted permissions or connection metadata.
+- Connection status.
+- Last successful connection check.
+- Webhook subscription status.
+- Created and updated timestamps.
+
+Do not request customers' Facebook passwords. Use only official Meta authorization.
+
+Never ask users to paste their Page access tokens manually as the normal connection method.
+
+### Meta credentials
+
+Create configuration entries for:
+
+- META_APP_ID
+- META_APP_SECRET
+- META_LOGIN_CONFIG_ID, if required by the chosen Facebook Login for Business flow.
+- META_WEBHOOK_VERIFY_TOKEN
+- META_GRAPH_API_VERSION
+- META_REDIRECT_URI
+- META_APP_URL
+
+Set the production application URL to https://dorlacode.com/.
+
+Use the currently supported Graph API version and keep it configurable.
+
+If any permissions require Meta App Review or Advanced Access, document those requirements in the README. Build the application so the relevant features can be tested with authorized development/test Pages before public approval.
+
+## 8. Placeholder Credentials and Environment Configuration
+
+IMPORTANT: I do not have my real Meta developer credentials yet.
+
+Create a complete `.env.example` file and a `.env` configuration template containing clearly identified placeholder values for all required secrets and service settings.
+
+For example:
+
+APP_NAME="Dorla Messenger Automation"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=https://dorlacode.com/
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=replace_with_database_name
+DB_USERNAME=replace_with_database_username
+DB_PASSWORD=replace_with_database_password
+
+META_APP_ID=YOUR_META_APP_ID_HERE
+META_APP_SECRET=YOUR_META_APP_SECRET_HERE
+META_LOGIN_CONFIG_ID=YOUR_META_LOGIN_CONFIG_ID_HERE
+META_WEBHOOK_VERIFY_TOKEN=REPLACE_WITH_A_RANDOM_SECRET
+META_GRAPH_API_VERSION=REPLACE_WITH_CURRENT_SUPPORTED_VERSION
+META_REDIRECT_URI=https://dorlacode.com/auth/meta/callback
+META_APP_URL=https://dorlacode.com
+
+QUEUE_CONNECTION=database
+CACHE_STORE=file
+SESSION_DRIVER=file
+
+MAIL_MAILER=smtp
+MAIL_HOST=YOUR_SMTP_HOST
+MAIL_PORT=587
+MAIL_USERNAME=YOUR_SMTP_USERNAME
+MAIL_PASSWORD=YOUR_SMTP_PASSWORD
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=no-reply@dorlacode.com
+MAIL_FROM_NAME="${APP_NAME}"
+
+These are examples, not actual credentials. Adjust configuration keys to match the implemented integration.
+
+Requirements:
+
+- Never hardcode API secrets in PHP files, JavaScript, Blade templates, or committed configuration files.
+- Never include live credentials in the source code.
+- Read configuration using Laravel's config and environment configuration system.
+- Keep `.env` excluded from version control.
+- Include `.env.example` with safe placeholders.
+- Explain how to copy `.env.example` to `.env`.
+- Generate a Laravel APP_KEY using `php artisan key:generate`.
+- Include validation and a clear setup warning when Meta credentials are missing.
+- The application must still boot and allow non-Facebook functionality to work when placeholder credentials are present.
+- Disable live Facebook API operations until valid credentials are configured.
+- Never pretend that a Facebook Page was connected or that a message was sent when only placeholder credentials are available.
+- Do not disable TLS certificate verification to make API requests work.
+
+## 9. Messenger Webhooks
+
+Implement secure webhook endpoints, for example:
+
+GET /webhooks/meta/messenger
+
+POST /webhooks/meta/messenger
+
+The GET endpoint should support Meta's webhook verification handshake.
+
+The POST endpoint must:
+
+- Verify the X-Hub-Signature-256 header using the Meta app secret and the raw request body.
+- Reject invalid signatures.
+- Parse incoming webhook payloads safely.
+- Identify the relevant connected Page.
+- Identify the appropriate tenant using the connected Page record.
+- Handle incoming messages.
+- Handle postbacks and button interactions.
+- Handle message delivery and read receipts where supported.
+- Handle supported comment events.
+- Queue appropriate processing jobs.
+- Respond promptly to Meta.
+- Avoid processing duplicate webhook events.
+- Log errors without logging access tokens, app secrets, or unnecessary personal data.
+
+Implement webhook event processing in dedicated service classes and queue jobs rather than putting all business logic in controllers.
+
+Add idempotency protection for duplicate messages, events, and comments.
+
+## 10. Welcome Message Automation
+
+Allow customers to configure welcome messages for their connected Pages.
+
+Features:
+- Enable or disable the welcome flow.
+- Edit the welcome text.
+- Add buttons where supported.
+- Insert personalization variables.
+- Configure an appropriate first-interaction experience.
+- Preview the message.
+- Save a draft.
+- Publish the automation.
+- Test the configuration.
+- View execution statistics.
+
+Example:
+
+"Hi {{first_name}}! 👋 Welcome to our page. How can we help you today?"
+
+Provide a fallback if the first name is unavailable.
+
+Only send welcome messages when the platform and Meta rules permit the message.
+
+## 11. Automatic Messenger DM Replies
+
+Allow each connected Page to configure a default automatic reply.
+
+Features:
+- Enable or disable automatic replies.
+- Customize the message.
+- Add supported quick replies or buttons.
+- Insert subscriber variables.
+- Configure keyword-specific responses.
+- Configure optional business-hours responses.
+- Add a fallback response.
+- Configure handoff to a human agent.
+- Preview the reply.
+- View message and click statistics.
+
+Example:
+
+"Hello {{first_name}}! Thanks for messaging us. What would you like help with today?"
+
+Create an automation priority system:
+
+1. Explicit matching keyword or rule.
+2. Specific campaign or configured flow.
+3. Default automatic reply.
+4. Optional fallback or human handoff.
+
+Prevent duplicate responses when multiple rules match the same event.
+
+Apply the current Meta messaging-window and message eligibility rules before every outbound message.
+
+## 12. Comment-to-Messenger Automation
+
+This is one of the main features of the platform.
+
+Allow customers to select an eligible connected Page post and configure an automation for its comments.
+
+Features:
+- Select a Page.
+- Display available posts when supported by the granted permissions.
+- Select a specific post or configure supported rules for future posts.
+- Configure keyword matching.
+- Configure an optional default response for eligible comments.
+- Edit the private reply message.
+- Insert supported personalization variables.
+- Enable or disable the rule.
+- Preview the message.
+- Track processed comments.
+- Show successful, skipped, duplicate, and failed events.
+
+Example private reply:
+
+"Hi {{first_name}}! Thanks for your comment. Tap the button below to get more information."
+
+Use Meta's supported comment event subscriptions and private-reply API behavior.
+
+IMPORTANT:
+
+- Follow Meta's private-reply restrictions, including the applicable timing window and one-private-reply limitations.
+- Do not assume that a commenter is a Messenger subscriber.
+- Do not send repeated private replies to the same comment.
+- Do not assume the user has opted in to promotional broadcasts.
+- Continue the conversation only when the recipient takes an action that makes subsequent messaging eligible.
+- Handle deleted comments, unavailable posts, permission failures, and duplicate events gracefully.
+
+## 13. Subscriber and Contact Management
+
+Create a contact management system for every connected Page.
+
+Display:
+- Subscriber/contact name, when available.
+- Meta-scoped sender ID or recipient identifier.
+- Associated Facebook Page.
+- Date of first interaction.
+- Last interaction date.
+- Tags.
+- Last conversation activity.
+- Available interaction and messaging eligibility information.
+- Applicable notification opt-in records.
+- Contact source, such as a DM, comment flow, or other supported entry point.
+
+Features:
+- Search contacts.
+- Filter by Page.
+- Filter by tags.
+- Filter by interaction date.
+- Add and remove tags.
+- View contact activity.
+- Export authorized contact data to CSV.
+- Delete contacts and associated personal data when required.
+- Respect applicable deletion requests and data retention rules.
+
+Do not claim access to all Facebook Page followers. The contact database must represent users whose information the app is permitted to access through supported interactions and APIs.
+
+Use only the fields Meta permits. Do not scrape Facebook profiles or attempt to retrieve private data.
+
+## 14. Message Personalization
+
+Implement a reusable template engine for outgoing messages.
+
+Support variables where the required data is available:
+
+- {{first_name}}
+- {{full_name}}, only when available.
+- {{page_name}}
+- {{business_name}}, configured by the customer.
+- {{custom_field}}, when defined and populated.
+
+Requirements:
+- Validate template variables.
+- Escape unsafe content where appropriate.
+- Provide fallback values.
+- Preview messages with sample data.
+- Prevent raw template code execution.
+- Make the system extensible for additional variables.
+
+Example:
+
+"Hi {{first_name}}, welcome to {{business_name}}! Let us know if you need any help."
+
+## 15. Broadcast Messaging System
+
+Build a broadcast management module with a professional message composer.
+
+Features:
+- Select a connected Page.
+- Compose text.
+- Add supported links and buttons.
+- Personalize using contact fields.
+- Choose an eligible recipient segment.
+- Exclude contacts who are not eligible to receive the proposed message.
+- Preview the message.
+- Save drafts.
+- Schedule eligible campaigns.
+- Send test messages to an authorized test recipient.
+- Queue approved sends.
+- Rate-limit outbound processing.
+- Pause and resume campaigns.
+- Cancel pending messages.
+- View delivery failures and API errors.
+- Track delivered messages, reads where available, link clicks, and CTR.
+- Display campaign history.
+
+Before sending a message, verify that the recipient and message type are eligible under the applicable Meta policy.
+
+Do not build a system that bypasses Messenger's standard messaging window or other restrictions.
+
+Do not assume that previously messaged contacts can receive arbitrary promotional broadcasts forever.
+
+If a recipient is ineligible, skip that recipient and record the reason. Provide a clear explanation to the customer.
+
+Support eligible opt-in notification mechanisms only where the feature is available, correctly configured, and approved for the intended use.
+
+The scheduler must not override Meta messaging rules.
+
+## 16. Click Tracking and Analytics
+
+Build a first-party click tracking system.
+
+Generate unique tracking URLs associated with an outbound message and campaign.
+
+Example:
+
+https://dorlacode.com/c/{tracking_code}
+
+When a user visits a tracking URL:
+
+1. Validate the tracking code.
+2. Record the click event.
+3. Associate it with the correct tenant, Page, message and campaign.
+4. Record a timestamp and any minimal necessary metadata.
+5. Redirect to the configured destination.
+6. Avoid open redirect vulnerabilities by validating stored destinations.
+
+Store:
+- Campaign ID.
+- Message ID.
+- Tracking code.
+- Destination URL.
+- Click timestamp.
+- Available recipient association.
+- Optional deduplication information.
+
+Create analytics for:
+- Total messages attempted.
+- Successfully sent messages.
+- Delivered messages when available.
+- Reads when available.
+- Total clicks.
+- Unique clickers.
+- CTR.
+- Results by campaign.
+- Results by automation.
+- Results by Page.
+- Results over time.
+
+Use a clearly defined CTR formula, such as:
+
+CTR = Unique recipients who clicked / Delivered messages × 100
+
+Document the chosen denominator in the interface.
+
+Do not invent delivery or read events when Meta does not provide them. Keep sent, delivered, read and clicked metrics separate.
+
+## 17. Super-Admin Dashboard
+
+Create a separate administrative area restricted to users with a dedicated super-admin role.
+
+Do not grant administrator privileges based on a public registration form or a user-editable field.
+
+The super-admin dashboard must display:
+
+- Total registered users.
+- Active users.
+- Suspended users.
+- Total connected Facebook Pages.
+- Active Page connections.
+- Disconnected or unhealthy Pages.
+- Page names and Page IDs where available.
+- The internal customer account associated with each Page.
+- Total contacts across the platform.
+- Total messages processed.
+- Total active automations.
+- Total broadcasts.
+- Platform usage charts.
+- Recent account registrations.
+- Recent system events.
+- Queue and webhook health.
+- Recent API errors.
+
+### User management
+
+Administrators should be able to:
+- Search users.
+- Filter users by account status.
+- View user profiles.
+- View registration date and last login.
+- View the Pages connected by each user.
+- View account usage and limits.
+- Activate or suspend an account.
+- Restore a suspended account.
+- Initiate an appropriate password reset flow.
+- Add internal support notes.
+- View relevant audit logs.
+- Enforce account-level limits.
+
+Do not expose users' passwords, Page access tokens, or app secrets in the admin interface.
+
+### Connected Page management
+
+Administrators should be able to:
+- View all connected Pages.
+- Search by Page name or Page ID.
+- Filter by connection status.
+- View the owning account.
+- See the connection date and last successful check.
+- Identify invalid credentials or missing permissions.
+- View webhook subscription status.
+- View recent integration errors.
+- Disable a connection when necessary.
+- Help the customer reconnect the Page.
+
+Do not expose full access tokens to administrators in plaintext.
+
+### Other administration features
+
+- Configure public website content.
+- Configure pricing display.
+- Configure platform defaults.
+- Configure account limits.
+- View system activity logs.
+- Manage roles and permissions.
+- Monitor failed queue jobs.
+- View integration health.
+- Configure maintenance mode information.
+- Review privacy and data deletion requests.
+
+Use role-based access control. Protect every admin route and action with server-side authorization.
+
+## 18. Database Design
+
+Create migrations and Eloquent models for a well-structured database.
+
+Suggested tables:
+
+- users
+- roles
+- user_roles
+- facebook_pages
+- facebook_page_permissions
+- messenger_contacts
+- contact_tags
+- contact_tag_assignments
+- contact_custom_fields
+- automation_rules
+- automation_steps
+- automation_executions
+- comment_events
+- conversations
+- message_events
+- broadcasts
+- broadcast_recipients
+- message_templates
+- tracked_links
+- link_click_events
+- notification_opt_ins
+- webhook_events
+- integration_logs
+- audit_logs
+- account_settings
+- system_settings
+- data_deletion_requests
+
+Add any additional tables needed by the final architecture.
+
+Use foreign keys, appropriate indexes, unique constraints and tenant ownership checks.
+
+For tenant-owned records, associate the record with the owning customer account and, where applicable, the connected Page.
+
+Use soft deletes selectively and implement actual personal-data deletion where legally required.
+
+## 19. Recommended Laravel Structure
+
+Keep controllers small and move integration and automation logic into services and jobs.
+
+Suggested classes:
+
+- MetaOAuthController
+- MetaWebhookController
+- FacebookPageController
+- AutomationController
+- CommentAutomationController
+- MessengerContactController
+- BroadcastController
+- AnalyticsController
+- AdminDashboardController
+- AdminUserController
+- AdminPageController
+
+Suggested service classes:
+
+- MetaGraphApiService
+- MetaOAuthService
+- MessengerSendService
+- WebhookVerificationService
+- WebhookEventProcessor
+- AutomationEngine
+- MessageTemplateService
+- MessagingEligibilityService
+- BroadcastService
+- ClickTrackingService
+- TenantContextService
+
+Suggested queue jobs:
+
+- ProcessMetaWebhook
+- ProcessIncomingMessage
+- ProcessCommentEvent
+- SendMessengerReply
+- ProcessBroadcastRecipient
+- RefreshPageConnectionStatus
+- AggregateCampaignAnalytics
+
+Use Laravel events, listeners, policies, Form Requests, jobs and service classes where appropriate.
+
+Do not put the entire application into one controller or one oversized PHP file.
+
+## 20. Security Requirements
+
+Security is essential because the application stores credentials and manages customer communication.
+
+Implement:
+- Laravel CSRF protection.
+- Input validation.
+- Output escaping.
+- SQL injection protection through Eloquent or parameterized queries.
+- Authorization policies.
+- Strict tenant isolation.
+- Login and API rate limiting.
+- Secure session cookies over HTTPS.
+- Encrypted Page access tokens.
+- Safe webhook signature verification.
+- Webhook event deduplication.
+- Secure OAuth state validation.
+- Protection against open redirects.
+- Audit logging for sensitive administrative actions.
+- Token revocation and deletion when a Page is disconnected.
+- Secure error messages without leaking secrets.
+- Backup and recovery documentation.
+- Appropriate data retention and privacy controls.
+
+Never store Facebook passwords.
+
+Never expose secrets in HTML, JavaScript, URLs, application logs or Git repositories.
+
+Do not log full webhook payloads containing unnecessary personal information.
+
+## 21. Subscription and Pricing Readiness
+
+Build the application so pricing and plan limits can be added later.
+
+Provide an architecture for:
+- Free plan.
+- Paid plans.
+- Maximum connected Pages.
+- Contact limits.
+- Automation limits.
+- Broadcast usage limits.
+- Feature access controls.
+- Account usage tracking.
+
+Do not hardcode a payment provider into the core application.
+
+For the initial release, allow the administrator to configure the displayed plans and optionally keep account billing disabled until the platform is ready.
+
+Clearly separate the platform's own subscription fees from any costs imposed by external service providers.
+
+## 22. Deployment at dorlacode.com
+
+Prepare the application for production deployment at:
+
+https://dorlacode.com/
+
+Assume that the actual hosting environment may have limitations, so document the requirements and verify them before choosing the final deployment configuration.
+
+Provide instructions for:
+- Uploading the application.
+- Configuring the document root to point to Laravel's public directory.
+- Configuring the MySQL database.
+- Creating the production `.env` file.
+- Installing Composer dependencies.
+- Running database migrations.
+- Generating the Laravel APP_KEY.
+- Configuring writable storage and cache directories.
+- Enabling HTTPS.
+- Setting the correct trusted proxy and URL configuration when needed.
+- Configuring the queue worker.
+- Configuring Laravel Scheduler.
+- Setting up email delivery.
+- Registering the Meta OAuth redirect URI.
+- Configuring Meta webhook callback URLs.
+- Configuring production logging.
+- Disabling debug mode.
+- Running backups.
+- Performing health checks.
+
+Production configuration should include:
+
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://dorlacode.com
+
+Do not assume that the website's hosting plan supports persistent queue workers or cron jobs. Provide a practical alternative if the host does not support them.
+
+Do not place the Laravel application secrets or private source files inside a publicly accessible web directory.
+
+## 23. Testing and Quality Assurance
+
+Include:
+- Feature tests for registration and login.
+- Tests for tenant isolation.
+- Tests for admin authorization.
+- Tests for Meta webhook verification.
+- Tests for invalid webhook signatures.
+- Tests for duplicate webhook events.
+- Tests for automation rule matching.
+- Tests for comment reply restrictions.
+- Tests for message eligibility checks.
+- Tests for broadcast recipient filtering.
+- Tests for click tracking.
+- Tests for token encryption.
+- Tests for disconnected Pages.
+- Tests for missing Meta credentials.
+- Tests for queue failures.
+
+Provide a development mode with simulated Meta events and clearly labeled mock responses.
+
+Mock mode must never be confused with live delivery.
+
+## 24. Deliverables
+
+Generate a complete project containing:
+
+1. All Laravel source code.
+2. All controllers, services, models, jobs and middleware.
+3. All database migrations and seeders.
+4. All Blade templates and Bootstrap assets.
+5. All public website pages.
+6. Customer dashboard.
+7. Super-admin dashboard.
+8. Facebook authorization integration.
+9. Webhook handling.
+10. Welcome and default DM automation.
+11. Comment-to-message automation.
+12. Subscriber management.
+13. Personalized message templates.
+14. Broadcast manager.
+15. Click tracking and analytics.
+16. Secure configuration and placeholder `.env.example`.
+17. Automated tests.
+18. README with complete installation instructions.
+19. Meta app configuration instructions.
+20. Production deployment instructions for dorlacode.com.
+21. Troubleshooting guide.
+22. Clear documentation of all Meta permissions and App Review requirements.
+
+If possible, generate the project as a complete set of source files that can be installed and run, rather than returning only snippets or a tutorial.
+
+## 25. Final Instructions
+
+Before implementation, inspect the installed Laravel/PHP environment and choose compatible stable dependencies.
+
+Implement the application in logical modules. Make sure all database migrations, routes, navigation links, forms and dashboard functions work together.
+
+Do not leave critical features as empty buttons or placeholder pages.
+
+Use placeholder credentials only for secrets that I will supply later. Implement the actual integration logic around those configuration values.
+
+If an API feature cannot function without valid Meta credentials or permissions, build its complete code path, explain the missing prerequisite and provide a clear configuration warning.
+
+Do not fabricate successful Page connections, subscriber counts, messages, delivery receipts or analytics.
+
+Prioritize a secure multi-tenant architecture, an excellent Bootstrap user interface, and a reliable Meta integration.
+
+The final result should be a deployable, extensible Laravel SaaS chatbot platform that can eventually serve many businesses and their connected Facebook Pages from one central application.
