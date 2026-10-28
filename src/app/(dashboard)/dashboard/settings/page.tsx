@@ -4,7 +4,16 @@ import { useState, useEffect } from 'react'
 import { useApi, apiCall } from '@/hooks/useApi'
 import { Loading, ConfirmDialog, showToast, CopyButton } from '@/components/ui'
 
-type Me = { id: string; name: string; email: string; role: string; twoFactorEnabled: boolean; notificationPrefs?: Record<string, boolean> | null }
+type Me = {
+  user: {
+    id: string
+    name: string
+    email: string
+    role: string
+    twoFactorEnabled: boolean
+    notificationPrefs?: Record<string, boolean> | null
+  }
+}
 type SessionRow = { id: string; ip?: string | null; userAgent?: string | null; createdAt: string; expiresAt: string; current: boolean }
 
 export default function SettingsPage() {
@@ -12,7 +21,7 @@ export default function SettingsPage() {
   const sessionsQ = useApi<{ sessions: SessionRow[] }>('/api/auth/sessions')
   const [tab, setTab] = useState<'profile' | 'security' | 'notifications'>('profile')
 
-  const [name, setName] = useState('')
+  const [nameOverride, setNameOverride] = useState<string | null>(null)
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' })
   const [twoFa, setTwoFa] = useState<{ qrDataUrl: string; otpauth: string } | null>(null)
   const [twoFaCode, setTwoFaCode] = useState('')
@@ -20,17 +29,15 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false)
   const [confirmRevokeAll, setConfirmRevokeAll] = useState(false)
 
-  useEffect(() => {
-    if (meQ.data?.user) setName(meQ.data.user.name)
-  }, [meQ.data])
-
   const me = meQ.data?.user
+  const name = nameOverride ?? me?.name ?? ''
 
   const saveProfile = async () => {
     setBusy(true)
     try {
       await apiCall('/api/profile', 'PATCH', { name })
       showToast('Profile updated.', 'success')
+      setNameOverride(null)
       meQ.refetch()
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Update failed', 'danger')
@@ -133,7 +140,7 @@ export default function SettingsPage() {
           <div className="card-body p-4">
             <div className="mb-3">
               <label className="form-label" htmlFor="st-name">Full name</label>
-              <input id="st-name" className="form-control" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+              <input id="st-name" className="form-control" value={name} onChange={(e) => setNameOverride(e.target.value)} maxLength={100} />
             </div>
             <div className="mb-3">
               <label className="form-label">Email</label>

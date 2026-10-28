@@ -32,7 +32,7 @@ export function DashboardShell({
   variant = 'customer',
 }: {
   items: DashNavItem[]
-  user: { name: string; email: string; role: string }
+  user: { name: string; email: string; role: string; demoData?: boolean }
   children: ReactNode
   variant?: 'customer' | 'admin'
 }) {

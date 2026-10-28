@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { hashPassword, passwordStrengthError } from '@/lib/password'
-import { jsonOk, handleApiError, parseBody, enforceRateLimitAsync } from '@/lib/api'
+import { jsonOk, jsonError, handleApiError, parseBody, enforceRateLimitAsync } from '@/lib/api'
 import { RateLimits } from '@/lib/rate-limit'
 import { issueToken } from '@/features/auth/tokens'
 import { sendEmail, devEmailLinkEnabled } from '@/lib/email'

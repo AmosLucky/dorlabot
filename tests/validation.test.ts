@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { rateLimit } from '../src/lib/rate-limit'
 import { validateEnvAtStartup } from '../src/lib/env'
 import { automationUpsertSchema } from '../src/features/automations/schema'
@@ -25,15 +25,15 @@ describe('rate limiting (sliding window)', () => {
 
 describe('environment startup validation', () => {
   it('flags missing AUTH_SECRET in production mode', () => {
-    const prevNodeEnv = process.env.NODE_ENV
-    const prevAuth = process.env.AUTH_SECRET
-    process.env.NODE_ENV = 'production'
-    process.env.AUTH_SECRET = 'insecure-dev-secret-change-me'
-    const result = validateEnvAtStartup()
-    expect(result.ok).toBe(false)
-    expect(result.problems.join(' ')).toMatch(/AUTH_SECRET/)
-    process.env.NODE_ENV = prevNodeEnv
-    process.env.AUTH_SECRET = prevAuth
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('AUTH_SECRET', 'insecure-dev-secret-change-me')
+    try {
+      const result = validateEnvAtStartup()
+      expect(result.ok).toBe(false)
+      expect(result.problems.join(' ')).toMatch(/AUTH_SECRET/)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 

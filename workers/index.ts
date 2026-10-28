@@ -67,7 +67,7 @@ const campaignWorker = new Worker(
     const { campaignId, recipientId } = job.data as { campaignId: string; recipientId: string }
     await processCampaignRecipient(campaignId, recipientId)
   },
-  { connection, concurrency: 2 }
+  { connection, concurrency: 2, limiter: { max: 60, duration: 60_000 } }
 )
 
 const maintenanceWorker = new Worker(

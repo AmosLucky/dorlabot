@@ -9,7 +9,7 @@
  * connecting real Pages.
  */
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, type Contact, type ContactMessagingState } from '@prisma/client'
 import { hashPassword } from '../src/lib/password'
 import { encryptSecret, shortSlug } from '../src/lib/crypto'
 import { randomToken } from '../src/lib/crypto'
@@ -230,7 +230,7 @@ async function main() {
       ['Fatima Bello', '100000000000007', 'ELIGIBLE', 12],
       ['Emeka Nwosu', '100000000000008', 'UNKNOWN', 90],
     ] as const
-    const contacts = []
+    const contacts: Contact[] = []
     for (const [name, psid, state, hrs] of contactSpecs) {
       const [firstName, lastName] = [name.split(' ')[0], name.split(' ')[1]]
       const c = await db.contact.upsert({
@@ -243,7 +243,7 @@ async function main() {
           firstName,
           lastName,
           source: hrs % 2 === 0 ? 'comment_reply' : 'messenger',
-          messagingState: state as never,
+          messagingState: state as ContactMessagingState,
           messagingWindowUntil: state === 'ELIGIBLE' ? new Date(Date.now() + (24 - hrs) * 3600 * 1000) : null,
           optedOutAt: state === 'OPTED_OUT' ? hoursAgo(hrs) : null,
           isSample: true,

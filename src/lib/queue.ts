@@ -17,7 +17,7 @@ export type MetaEventJob = { webhookEventId: string }
 export type CampaignSendJob = { campaignId: string; recipientId: string }
 export type MaintenanceJob = { task: 'sweep-pending-events' | 'dispatch-scheduled-campaigns' | 'sync-pages' }
 
-type IoRedis = typeof import('ioredis').default
+type IoRedis = InstanceType<typeof import('ioredis').default>
 
 const globalRedis = globalThis as unknown as { __queueIoRedis?: IoRedis; __queueIoRedisFailed?: boolean }
 
@@ -75,8 +75,6 @@ export async function enqueueCampaignRecipient(campaignId: string, recipientId: 
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 1000,
         removeOnFail: false,
-        // throughput guard; per-recipient jobs are throttled at queue level
-        limiter: { max: 60, duration: 60000 },
       }
     )
     return true
@@ -92,15 +90,23 @@ export async function startMaintenanceScheduler(): Promise<boolean> {
   try {
     const { Queue } = await import('bullmq')
     const queue = new Queue(QUEUES.maintenance, { connection: conn.connection })
-    await queue.add(
-      'tick',
-      { task: 'sweep-pending-events' } satisfies MaintenanceJob,
-      { repeat: { every: 30_000 }, removeOnComplete: 50 }
+    await queue.upsertJobScheduler(
+      'sweep-pending-events',
+      { every: 30_000 },
+      {
+        name: 'tick',
+        data: { task: 'sweep-pending-events' } satisfies MaintenanceJob,
+        opts: { removeOnComplete: 50 },
+      }
     )
-    await queue.add(
-      'tick',
-      { task: 'dispatch-scheduled-campaigns' } satisfies MaintenanceJob,
-      { repeat: { every: 60_000 }, removeOnComplete: 50 }
+    await queue.upsertJobScheduler(
+      'dispatch-scheduled-campaigns',
+      { every: 60_000 },
+      {
+        name: 'tick',
+        data: { task: 'dispatch-scheduled-campaigns' } satisfies MaintenanceJob,
+        opts: { removeOnComplete: 50 },
+      }
     )
     return true
   } catch (err) {

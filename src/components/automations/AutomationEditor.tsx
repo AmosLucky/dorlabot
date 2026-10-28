@@ -52,6 +52,8 @@ export default function AutomationEditor({
 
   useEffect(() => {
     if (!open) return
+    // Hydrate the modal draft when it opens or the selected automation changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null)
     setPosts(null)
     setPostsReason(null)
@@ -72,7 +74,6 @@ export default function AutomationEditor({
     } else {
       setForm(blankForm(type, pages[0]?.id ?? ''))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, automation?.id])
 
   const connectedPages = useMemo(() => pages.filter((p) => p.status === 'CONNECTED'), [pages])
@@ -80,7 +81,7 @@ export default function AutomationEditor({
   useEffect(() => {
     if (!open || type !== 'COMMENT_REPLY' || !form.pageId) return
     let cancelled = false
-    apiCall<{ posts: { id: string; label: string }[]; reason?: string }>(`/api/facebook/pages/${form.pageId}/posts`)
+    apiCall<{ posts: { id: string; label: string }[]; reason?: string }>(`/api/facebook/pages/${form.pageId}/posts`, 'GET')
       .then((res) => {
         if (cancelled) return
         setPosts(res.posts)
