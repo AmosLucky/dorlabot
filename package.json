@@ -5,7 +5,7 @@
   "scripts": {
   "dev": "next dev -p 3000",
  "postinstall": "prisma generate",
-"build": "next build",
+"build": "next build && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/static && if [ -d public ]; then cp -r public .next/standalone/public; fi",
 "start": "node .next/standalone/server.js",
   "lint": "eslint .",
   "db:push": "prisma db push --accept-data-loss",
