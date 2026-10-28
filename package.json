@@ -6,7 +6,7 @@
   "dev": "next dev -p 3000",
  "postinstall": "prisma generate",
 "build": "next build",
-"start": "next start -p 3000",
+"start": "node .next/standalone/server.js",
   "lint": "eslint .",
   "db:push": "prisma db push --accept-data-loss",
   "db:seed": "bun prisma/seed.ts",
