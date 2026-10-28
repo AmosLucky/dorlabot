@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { jsonOk, jsonError, handleApiError, parseBody } from '@/lib/api'
 import { requireUser } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { authenticator } from 'otplib'
+import { authenticator } from '@otplib/v12-adapter'
 import { decryptSecret } from '@/lib/crypto'
 import { audit } from '@/lib/audit'
 
