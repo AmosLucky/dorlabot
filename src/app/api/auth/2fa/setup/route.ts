@@ -8,7 +8,7 @@ import { env } from '@/lib/env'
 export async function POST() {
   try {
     const user = await requireUser()
-    const { authenticator } = await import('otplib')
+    const { authenticator } = await import('@otplib/v12-adapter')
     const secret = authenticator.generateSecret()
     await db.user.update({
       where: { id: user.id },

@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       if (!pending || pending.userId !== user.id) {
         return jsonError('Two-factor session expired. Please sign in again.', 401, 'TWOFA_EXPIRED')
       }
-      const { authenticator } = await import('otplib')
+      const { authenticator } = await import('@otplib/v12-adapter')
       const { decryptSecret } = await import('@/lib/crypto')
       const secret = user.twoFactorSecretEnc ? decryptSecret(user.twoFactorSecretEnc) : null
       if (!secret || !authenticator.check(body.twoFactorCode.replace(/\s/g, ''), secret)) {
