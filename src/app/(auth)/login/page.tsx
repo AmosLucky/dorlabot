@@ -41,7 +41,9 @@ export default function LoginPage() {
             {error}
             {error.includes('verify your email') && (
               <div className="mt-1">
-                <Link href="/verify-email" className="alert-link">Need a new verification link?</Link>
+                <Link href={`/verify-email${form.email ? `?email=${encodeURIComponent(form.email)}` : ''}`} className="alert-link">
+                  Need a new verification link?
+                </Link>
               </div>
             )}
           </div>

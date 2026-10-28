@@ -37,5 +37,6 @@ export const RateLimits = {
   login: { limit: 10, windowMs: 5 * 60 * 1000 },
   register: { limit: 5, windowMs: 60 * 60 * 1000 },
   forgotPassword: { limit: 5, windowMs: 60 * 60 * 1000 },
+  resendVerification: { limit: 5, windowMs: 60 * 60 * 1000 },
   api: { limit: 120, windowMs: 60 * 1000 },
 }
