@@ -99,11 +99,15 @@ See [`.env.example`](./.env.example) for the full annotated list. Security-criti
 ## Facebook / Meta configuration (operator checklist)
 
 1. Create a Meta app (Business type) at https://developers.facebook.com/apps
-2. Add products: **Facebook Login for Business** (or Facebook Login) + **Messenger**
-3. Configure OAuth: Valid OAuth Redirect URIs = `https://dorlacode.com/api/facebook/callback`
-4. Configure webhooks: callback URL `https://dorlacode.com/api/webhooks/meta`, verify token from env
-5. Subscribe to webhook fields: `feed`, `messages`, `messaging_postbacks`, `message_deliveries`, `message_reads`
-6. Request permissions: `pages_show_list`, `pages_read_engagement`, `pages_manage_metadata`, `pages_messaging`
+2. Add **Facebook Login for Business** + **Messenger**. Create a Login for Business
+   configuration that requests `pages_show_list`, `pages_read_engagement`,
+   `pages_manage_metadata`, and `pages_messaging`.
+3. Set `META_LOGIN_CONFIG_ID` to that configuration's ID in the server environment.
+   The connect flow still requires the Page admin to authorize their Facebook account;
+   this is separate from signing in to DorlaCode.
+4. Configure OAuth: Valid OAuth Redirect URIs = `https://dorlacode.com/api/facebook/callback`
+5. Configure webhooks: callback URL `https://dorlacode.com/api/webhooks/meta`, verify token from env
+6. Subscribe to webhook fields: `feed`, `messages`, `messaging_postbacks`, `message_deliveries`, `message_reads`
 7. Complete App Review with reviewer instructions (see [META_APP_REVIEW.md](./META_APP_REVIEW.md))
 8. Configure your Page's messenger settings (domain allowlist etc.) as required
 

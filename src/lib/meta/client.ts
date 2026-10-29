@@ -58,10 +58,15 @@ export function buildOAuthRedirectUrl(state: string): string {
   url.searchParams.set('client_id', env.meta.appId)
   url.searchParams.set('redirect_uri', env.meta.redirectUri)
   url.searchParams.set('state', state)
-  // Request only permissions the platform actually needs. If the Meta app has not
-  // completed App Review, Facebook will show which scopes are unavailable.
-  url.searchParams.set('scope', 'pages_show_list,pages_read_engagement,pages_manage_metadata,pages_messaging')
   url.searchParams.set('response_type', 'code')
+  if (env.meta.loginConfigId) {
+    url.searchParams.set('config_id', env.meta.loginConfigId)
+    url.searchParams.set('override_default_response_type', 'true')
+  } else {
+    // Login for Business configurations define their requested permissions in Meta.
+    // Keep classic Facebook Login available for apps that have not set a config ID.
+    url.searchParams.set('scope', 'pages_show_list,pages_read_engagement,pages_manage_metadata,pages_messaging')
+  }
   return url.toString()
 }
 
