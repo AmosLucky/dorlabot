@@ -1,8 +1,21 @@
-import { env } from '@/lib/env'
+'use client'
+
+import { useApi } from '@/hooks/useApi'
 
 /** Shown wherever Meta-dependent features need configuration guidance. */
 export default function MetaSetupNotice({ compact = false }: { compact?: boolean }) {
-  if (env.meta.configured) return null
+  const { data, loading, error } = useApi<{ configured: boolean; appIdConfigured: boolean }>('/api/meta/status')
+
+  if (loading || (data?.configured ?? false)) return null
+  if (error) {
+    return (
+      <div className={`setup-required-banner rounded-3 p-3 mb-4 ${compact ? 'small' : ''}`} role="alert">
+        <strong>Could not check Meta integration status.</strong>
+        <p className="mb-0 mt-1 text-secondary">Refresh the page or contact your platform administrator.</p>
+      </div>
+    )
+  }
+
   return (
     <div className={`setup-required-banner rounded-3 p-3 mb-4 ${compact ? 'small' : ''}`}>
       <div className="d-flex gap-3">
@@ -10,7 +23,7 @@ export default function MetaSetupNotice({ compact = false }: { compact?: boolean
         <div>
           <strong>Meta integration not configured yet.</strong>
           <p className="mb-1 mt-1">
-            {env.meta.appId
+            {data?.appIdConfigured
               ? 'The Meta App ID is set, but the App Secret is missing. Webhook verification and token exchange require both.'
               : 'Facebook connection, webhooks, and message sending require Meta app credentials. The platform will not simulate connections or sends until they are configured.'}
           </p>
