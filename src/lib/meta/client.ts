@@ -13,7 +13,7 @@ function redactSensitiveFields(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value).map(([key, nestedValue]) => [
         key,
-        /token|secret|authorization|(^|_)code$/i.test(key) ? '[REDACTED]' : redactSensitiveFields(nestedValue),
+        /token|secret|authorization/i.test(key) ? '[REDACTED]' : redactSensitiveFields(nestedValue),
       ]),
     )
   }
@@ -129,12 +129,13 @@ export async function debugToken(inputToken: string): Promise<{
 }
 
 export async function exchangeForLongLivedToken(shortLivedToken: string): Promise<{ accessToken: string; expiresIn?: number }> {
-  return graphFetch('oauth/access_token', {
+  const res = await graphFetch<{ access_token: string; expires_in?: number }>('oauth/access_token', {
     grant_type: 'fb_exchange_token',
     client_id: env.meta.appId,
     client_secret: env.meta.appSecret,
     fb_exchange_token: shortLivedToken,
   })
+  return { accessToken: res.access_token, expiresIn: res.expires_in }
 }
 
 // ── Pages ────────────────────────────────────────────────────────────
