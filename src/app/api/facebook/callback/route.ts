@@ -61,7 +61,7 @@ export async function GET(req: Request) {
 
     const debug = await debugToken(userToken)
     if (!debug.isValid) {
-      console.warn('[META TOKEN DEBUG]', {
+      console.warn('[META TOKEN DEBUG]', JSON.stringify({
         isValid: debug.isValid,
         appId: debug.appId,
         expectedAppId: env.meta.appId,
@@ -71,7 +71,7 @@ export async function GET(req: Request) {
         userId: debug.userId,
         longLivedTokenExchangeSucceeded,
         facebookResponse: debug.debugResponse,
-      })
+      }, null, 2))
       return NextResponse.redirect(new URL('/dashboard/pages?error=token_invalid', appUrl))
     }
 
