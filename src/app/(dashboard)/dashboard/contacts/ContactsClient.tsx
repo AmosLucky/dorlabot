@@ -158,7 +158,7 @@ export default function ContactsClient() {
             <EmptyState
               icon="bi-people"
               title="No contacts yet"
-              description="Contacts are created automatically when people message your Page or comment on eligible posts. They respect Meta's Page-scoped identifiers — no email scraping, ever."
+              description="Contacts are created from new messages delivered to your connected Page's webhook; existing Messenger conversations are not imported. Confirm the Page shows its webhook as subscribed, the background worker is running, and check Admin → Monitoring for webhook events. Eligible post comments can also create contacts."
             />
           ) : (
             <div className="table-responsive">

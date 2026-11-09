@@ -230,7 +230,22 @@ async function handleMessaging(event: WebhookEvent, item: MetaMessagingItem) {
   const fbPageId = item.recipient?.id || event.fbPageId
   if (!fbPageId) return
   const page = await resolvePage(fbPageId)
-  if (!page || !event.pageId) return
+  if (!page || !event.pageId) {
+    const reason = !page
+      ? 'No connected Facebook Page matches the webhook Page ID.'
+      : 'Webhook event was not linked to a Facebook Page during ingestion.'
+    console.warn('[webhook] skipping Messenger event for an unlinked Page:', {
+      webhookEventId: event.id,
+      fbPageId,
+      linkedPageId: event.pageId,
+      connectedPageFound: Boolean(page),
+    })
+    await db.webhookEvent.update({
+      where: { id: event.id },
+      data: { status: 'SKIPPED', processedAt: new Date(), lastError: reason },
+    })
+    return
+  }
   const pageRef: PageRef = { id: page.id, userId: page.userId, fbPageId: page.fbPageId, accessTokenEnc: page.accessTokenEnc, name: page.name }
 
   // Deliveries & reads — update message statuses; no replies.
