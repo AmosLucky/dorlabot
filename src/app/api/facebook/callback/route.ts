@@ -45,17 +45,27 @@ export async function GET(req: Request) {
   try {
     const shortLived = await exchangeCodeForToken(code)
     let userToken = shortLived.accessToken
+    let longLivedTokenExchangeSucceeded = false
     let tokenExpiresAt: Date | null = shortLived.expiresIn ? new Date(Date.now() + shortLived.expiresIn * 1000) : null
     try {
       const longLived = await exchangeForLongLivedToken(shortLived.accessToken)
       userToken = longLived.accessToken
+      longLivedTokenExchangeSucceeded = true
       tokenExpiresAt = longLived.expiresIn ? new Date(Date.now() + longLived.expiresIn * 1000) : null
-    } catch {
+    } catch (err) {
       // Fall back to the short-lived token; page sync may fail earlier but connection still works.
+      console.warn('[facebook/callback] long-lived token exchange failed:', err instanceof GraphApiError
+        ? { httpStatus: err.httpStatus, code: err.code, subcode: err.subcode, type: err.type }
+        : 'unexpected error')
     }
 
     const debug = await debugToken(userToken)
     if (!debug.isValid) {
+      console.warn('[facebook/callback] Facebook rejected the exchanged user token:', {
+        longLivedTokenExchangeSucceeded,
+        expiresAt: debug.expiresAt?.toISOString() ?? null,
+        scopes: debug.scopes,
+      })
       return NextResponse.redirect(new URL('/dashboard/pages?error=token_invalid', appUrl))
     }
 
