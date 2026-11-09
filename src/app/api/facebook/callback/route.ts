@@ -70,6 +70,7 @@ export async function GET(req: Request) {
         expiresAt: debug.expiresAt?.toISOString() ?? null,
         userId: debug.userId,
         longLivedTokenExchangeSucceeded,
+        facebookResponse: debug.debugResponse,
       })
       return NextResponse.redirect(new URL('/dashboard/pages?error=token_invalid', appUrl))
     }

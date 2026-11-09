@@ -7,6 +7,19 @@ import { env } from '@/lib/env'
 
 const GRAPH_BASE = 'https://graph.facebook.com'
 
+function redactSensitiveFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactSensitiveFields)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [
+        key,
+        /token|secret|authorization|(^|_)code$/i.test(key) ? '[REDACTED]' : redactSensitiveFields(nestedValue),
+      ]),
+    )
+  }
+  return value
+}
+
 export class GraphApiError extends Error {
   httpStatus: number
   code?: number
@@ -87,6 +100,7 @@ export async function debugToken(inputToken: string): Promise<{
   expiresAt: Date | null
   scopes: string[]
   userId?: string
+  debugResponse: unknown
 }> {
   const res = await graphFetch<{
     data: {
@@ -96,7 +110,9 @@ export async function debugToken(inputToken: string): Promise<{
       expires_at?: number
       scopes?: string[]
       user_id?: string
+      [key: string]: unknown
     }
+    [key: string]: unknown
   }>('debug_token', {
     input_token: inputToken,
     access_token: `${env.meta.appId}|${env.meta.appSecret}`,
@@ -108,6 +124,7 @@ export async function debugToken(inputToken: string): Promise<{
     expiresAt: res.data.expires_at ? new Date(res.data.expires_at * 1000) : null,
     scopes: res.data.scopes ?? [],
     userId: res.data.user_id,
+    debugResponse: redactSensitiveFields(res),
   }
 }
 
