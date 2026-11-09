@@ -61,10 +61,15 @@ export async function GET(req: Request) {
 
     const debug = await debugToken(userToken)
     if (!debug.isValid) {
-      console.warn('[facebook/callback] Facebook rejected the exchanged user token:', {
-        longLivedTokenExchangeSucceeded,
-        expiresAt: debug.expiresAt?.toISOString() ?? null,
+      console.warn('[META TOKEN DEBUG]', {
+        isValid: debug.isValid,
+        appId: debug.appId,
+        expectedAppId: env.meta.appId,
+        type: debug.type,
         scopes: debug.scopes,
+        expiresAt: debug.expiresAt?.toISOString() ?? null,
+        userId: debug.userId,
+        longLivedTokenExchangeSucceeded,
       })
       return NextResponse.redirect(new URL('/dashboard/pages?error=token_invalid', appUrl))
     }

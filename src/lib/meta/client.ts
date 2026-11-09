@@ -80,13 +80,31 @@ export async function exchangeCodeForToken(code: string): Promise<{ accessToken:
   return { accessToken: res.access_token, expiresIn: res.expires_in }
 }
 
-export async function debugToken(inputToken: string): Promise<{ isValid: boolean; expiresAt: Date | null; scopes: string[]; userId?: string }> {
-  const res = await graphFetch<{ data: { is_valid: boolean; expires_at?: number; scopes?: string[]; user_id?: string } }>('debug_token', {
+export async function debugToken(inputToken: string): Promise<{
+  isValid: boolean
+  appId?: string
+  type?: string
+  expiresAt: Date | null
+  scopes: string[]
+  userId?: string
+}> {
+  const res = await graphFetch<{
+    data: {
+      is_valid: boolean
+      app_id?: string
+      type?: string
+      expires_at?: number
+      scopes?: string[]
+      user_id?: string
+    }
+  }>('debug_token', {
     input_token: inputToken,
     access_token: `${env.meta.appId}|${env.meta.appSecret}`,
   })
   return {
     isValid: res.data.is_valid,
+    appId: res.data.app_id,
+    type: res.data.type,
     expiresAt: res.data.expires_at ? new Date(res.data.expires_at * 1000) : null,
     scopes: res.data.scopes ?? [],
     userId: res.data.user_id,
